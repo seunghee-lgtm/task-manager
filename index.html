@@ -15,7 +15,7 @@
        app.js가 이 값을 읽어서 모든 fetch() 요청을 보냅니다.
   ============================================================ -->
   <script>
-    window.API_BASE_URL = 'https://script.google.com/macros/s/AKfycbwT2f-9Sp6HS7OPvzECN7bdwtIp_r58FBB6wqrjrRd3l8eBUTLj0fh5Zk3MvWTgUaYk/exec';
+    window.API_BASE_URL = 'https://script.google.com/macros/s/여기에_배포ID를_붙여넣으세요/exec';
   </script>
 
   <!-- ---------------- 로그인 화면 ---------------- -->
@@ -28,7 +28,7 @@
       <label class="remember-id-row">
         <input type="checkbox" id="rememberIdChk"> Remember ID
       </label>
-      <button class="btn-primary" id="loginBtn">Log In</button>
+      <button class="btn-primary" id="loginBtn"><span class="i18n-tip" data-tip="로그인">Log In</span></button>
       <div class="login-error" id="loginError"></div>
     </div>
   </div>
@@ -37,19 +37,19 @@
   <div id="appView" class="hidden">
     <div class="sidebar" id="sidebar">
       <div class="brand">🌿 Task Manager</div>
-      <div class="nav-item active" data-view="dashboard">📊 Dashboard</div>
-      <div class="nav-item" data-view="today">📌 Today's Tasks</div>
-      <div class="nav-item" data-view="todo">🔵 To Do</div>
-      <div class="nav-item" data-view="progress">🟢 In Progress</div>
-      <div class="nav-item" data-view="review">🟣 To Review</div>
-      <div class="nav-item" data-view="check">🟡 To Check</div>
-      <div class="nav-item" data-view="hold">⏸ On Hold</div>
-      <div class="nav-item" data-view="done">✅ Completed</div>
-      <div class="nav-item" data-view="overdue">⚠ Overdue</div>
-      <div class="nav-item" data-view="all">📁 All Tasks</div>
-      <div class="nav-item" data-view="calendar">🗓 Calendar</div>
-      <div class="nav-item" data-view="words">📖 Words</div>
-      <div class="nav-item" data-view="settings">⚙ Settings</div>
+      <div class="nav-item active" data-view="dashboard">📊 <span class="i18n-tip" data-tip="대시보드">Dashboard</span></div>
+      <div class="nav-item" data-view="today">📌 <span class="i18n-tip" data-tip="오늘의 업무">Today's Tasks</span></div>
+      <div class="nav-item" data-view="todo">🔵 <span class="i18n-tip" data-tip="할 일">To Do</span></div>
+      <div class="nav-item" data-view="progress">🟢 <span class="i18n-tip" data-tip="진행 중">In Progress</span></div>
+      <div class="nav-item" data-view="review">🟣 <span class="i18n-tip" data-tip="검토할 일">To Review</span></div>
+      <div class="nav-item" data-view="check">🟡 <span class="i18n-tip" data-tip="체크할 일">To Check</span></div>
+      <div class="nav-item" data-view="hold">⏸ <span class="i18n-tip" data-tip="보류">On Hold</span></div>
+      <div class="nav-item" data-view="done">✅ <span class="i18n-tip" data-tip="완료">Completed</span></div>
+      <div class="nav-item" data-view="overdue">⚠ <span class="i18n-tip" data-tip="기한 초과">Overdue</span></div>
+      <div class="nav-item" data-view="all">📁 <span class="i18n-tip" data-tip="전체 업무">All Tasks</span></div>
+      <div class="nav-item" data-view="calendar">🗓 <span class="i18n-tip" data-tip="캘린더">Calendar</span></div>
+      <div class="nav-item" data-view="words">📖 <span class="i18n-tip" data-tip="단어">Words</span></div>
+      <div class="nav-item" data-view="settings">⚙ <span class="i18n-tip" data-tip="설정">Settings</span></div>
     </div>
 
     <div class="main">
@@ -59,7 +59,7 @@
         <div class="user-area">
           👤 <span id="userLabel"></span>
           <span class="user-sep">|</span>
-          <button class="logout-link" onclick="doLogout()">Log Out</button>
+          <button class="logout-link" onclick="doLogout()"><span class="i18n-tip" data-tip="로그아웃">Log Out</span></button>
         </div>
       </div>
       <div class="content">
