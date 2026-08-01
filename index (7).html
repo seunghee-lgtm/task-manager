@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Task Manager</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>%F0%9F%8C%BF</text></svg>">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ============================================================
+       ⚠️ 반드시 아래 주소를 본인의 Apps Script 배포 주소로 바꿔주세요.
+       Apps Script 편집기 → 배포 → 배포 관리 → 웹앱 URL (.../exec로 끝남)
+       app.js가 이 값을 읽어서 모든 fetch() 요청을 보냅니다.
+  ============================================================ -->
+  <script>
+    window.API_BASE_URL = 'https://script.google.com/macros/s/여기에_배포ID를_붙여넣으세요/exec';
+  </script>
+
+  <!-- ---------------- 로그인 화면 ---------------- -->
+  <div id="loginView">
+    <div class="login-card">
+      <h1 id="loginTitle">🌿 Task Manager</h1>
+      <p class="sub">Please log in to continue</p>
+      <input id="loginId" placeholder="Username" autocomplete="username">
+      <input id="loginPw" type="password" placeholder="Password" autocomplete="current-password">
+      <label class="remember-id-row">
+        <input type="checkbox" id="rememberIdChk"> Remember ID
+      </label>
+      <button class="btn-primary" id="loginBtn">Log In</button>
+      <div class="login-error" id="loginError"></div>
+    </div>
+  </div>
+
+  <!-- ---------------- 로그인 후 메인 화면 ---------------- -->
+  <div id="appView" class="hidden">
+    <div class="sidebar" id="sidebar">
+      <div class="brand">🌿 Task Manager</div>
+      <div class="nav-item active" data-view="dashboard">📊 Dashboard</div>
+      <div class="nav-item" data-view="today">📌 Today's Tasks</div>
+      <div class="nav-item" data-view="todo">🔵 To Do</div>
+      <div class="nav-item" data-view="progress">🟢 In Progress</div>
+      <div class="nav-item" data-view="review">🟣 To Review</div>
+      <div class="nav-item" data-view="check">🟡 To Check</div>
+      <div class="nav-item" data-view="hold">⏸ On Hold</div>
+      <div class="nav-item" data-view="done">✅ Completed</div>
+      <div class="nav-item" data-view="overdue">⚠ Overdue</div>
+      <div class="nav-item" data-view="all">📁 All Tasks</div>
+      <div class="nav-item" data-view="calendar">🗓 Calendar</div>
+      <div class="nav-item" data-view="words">📖 Words</div>
+      <div class="nav-item" data-view="settings">⚙ Settings</div>
+    </div>
+
+    <div class="main">
+      <div class="topbar">
+        <button class="hamburger" id="hamburgerBtn">☰</button>
+        <input type="search" placeholder="Use the search box at the top of each screen" disabled style="opacity:.5;">
+        <div class="user-area">
+          👤 <span id="userLabel"></span>
+          <span class="user-sep">|</span>
+          <button class="logout-link" onclick="doLogout()">Log Out</button>
+        </div>
+      </div>
+      <div class="content">
+        <!-- 대시보드 -->
+        <div id="view-dashboard" class="view-panel hidden"></div>
+
+        <!-- 업무 분류 화면들 -->
+        <div id="view-today" class="view-panel hidden"></div>
+        <div id="view-todo" class="view-panel hidden"></div>
+        <div id="view-progress" class="view-panel hidden"></div>
+        <div id="view-review" class="view-panel hidden"></div>
+        <div id="view-check" class="view-panel hidden"></div>
+        <div id="view-hold" class="view-panel hidden"></div>
+        <div id="view-done" class="view-panel hidden"></div>
+        <div id="view-overdue" class="view-panel hidden"></div>
+        <div id="view-all" class="view-panel hidden"></div>
+
+        <!-- 달력 -->
+        <div id="view-calendar" class="view-panel hidden"></div>
+
+        <!-- 단어 -->
+        <div id="view-words" class="view-panel hidden"></div>
+
+        <!-- 설정 -->
+        <div id="view-settings" class="view-panel hidden"></div>
+      </div>
+    </div>
+
+    <button class="fab" id="fabBtn">+</button>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

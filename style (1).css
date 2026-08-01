@@ -1,0 +1,290 @@
+/* ============================================================
+     CSS 변수 - 색상 테마 (북유럽 스타일: 밝은 배경, 세이지그린, 베이지, 차분한 블루)
+     이 값들만 바꾸면 전체 색상을 손쉽게 변경할 수 있습니다.
+  ============================================================ */
+  :root {
+    --bg: #f7f6f3;
+    --surface: #ffffff;
+    --border: #e6e3dc;
+    --text: #3b3a36;
+    --text-muted: #8a8880;
+    --sage: #7c9885;
+    --sage-light: #e6ede8;
+    --beige: #e8dfd0;
+    --beige-dark: #c9a876;
+    --blue: #7c93ab;
+    --blue-light: #e7edf3;
+    --purple: #a390b0;
+    --purple-light: #ede7f1;
+    --yellow: #d8a94a;
+    --yellow-light: #faf1dd;
+    --gray: #9b9990;
+    --gray-light: #eeece7;
+    --brown: #a3826a;
+    --danger: #c0654f;
+    --danger-light: #f6e6e2;
+
+    --status-todo: var(--blue);
+    --status-progress: var(--sage);
+    --status-review: var(--purple);
+    --status-check: var(--yellow);
+    --status-hold: var(--brown);
+    --status-done: var(--gray);
+
+    --cal-personal: #5b7fa6;
+    --cal-shared: #b98e5a;
+
+    --radius: 14px;
+    --radius-sm: 8px;
+    --shadow: 0 2px 10px rgba(60,55,45,0.06);
+    --shadow-lg: 0 8px 28px rgba(60,55,45,0.12);
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--bg); color: var(--text);
+    font-family: 'Pretendard', -apple-system, 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+    font-size: 14px; line-height: 1.5;
+  }
+  h1,h2,h3,h4 { margin: 0 0 8px; font-weight: 700; }
+  a { color: inherit; }
+  button { font-family: inherit; cursor: pointer; }
+  input, select, textarea { font-family: inherit; font-size: 14px; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .hidden { display: none !important; }
+
+  /* ---------------- 로그인 화면 ---------------- */
+  #loginView {
+    height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(160deg, var(--sage-light), var(--bg) 60%);
+  }
+  .login-card {
+    background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-lg);
+    padding: 40px 36px; width: 340px; text-align: center;
+  }
+  .login-card h1 { font-size: 20px; color: var(--sage); margin-bottom: 4px; }
+  .login-card p.sub { color: var(--text-muted); font-size: 12px; margin-bottom: 24px; }
+  .login-card input {
+    width: 100%; padding: 12px 14px; margin-bottom: 12px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); background: var(--bg);
+  }
+  .btn-primary {
+    width: 100%; padding: 12px; border: none; border-radius: var(--radius-sm);
+    background: var(--sage); color: #fff; font-weight: 700; margin-top: 6px;
+  }
+  .btn-primary:hover { opacity: 0.9; }
+  .login-error { color: var(--danger); font-size: 12px; margin-top: 8px; min-height: 16px; }
+  .remember-id-row {
+    display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted);
+    margin: 2px 0 4px; text-align: left; cursor: pointer;
+  }
+  .remember-id-row input { width: auto; margin: 0; padding: 0; }
+
+  /* ---------------- 앱 레이아웃 ---------------- */
+  #appView { display: flex; height: 100vh; }
+  .sidebar {
+    width: 220px; background: var(--surface); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; padding: 20px 0; flex-shrink: 0;
+  }
+  .sidebar .brand { font-weight: 800; color: var(--sage); padding: 0 20px 20px; font-size: 16px; }
+  .nav-item {
+    padding: 11px 20px; color: var(--text-muted); font-size: 13px; font-weight: 600;
+    display: flex; align-items: center; gap: 10px; border-left: 3px solid transparent;
+  }
+  .nav-item:hover { background: var(--bg); color: var(--text); }
+  .nav-item.active { color: var(--sage); border-left-color: var(--sage); background: var(--sage-light); }
+  .sidebar .logout { margin-top: auto; padding: 14px 20px; color: var(--text-muted); font-size: 12px; }
+
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .topbar {
+    height: 60px; border-bottom: 1px solid var(--border); background: var(--surface);
+    display: flex; align-items: center; justify-content: space-between; padding: 0 24px; flex-shrink: 0;
+  }
+  .topbar input[type=search] {
+    border: 1px solid var(--border); border-radius: 20px; padding: 8px 16px; width: 260px; background: var(--bg);
+  }
+  .topbar .user-area { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-muted); }
+  .topbar .user-sep { color: var(--border); }
+  .logout-link {
+    background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    color: var(--text-muted); font-weight: 700; font-size: 12px; padding: 7px 12px; cursor: pointer;
+  }
+  .logout-link:hover { border-color: var(--danger); color: var(--danger); }
+
+  .today-date { color: var(--text-muted); font-size: 13px; margin: -4px 0 14px; font-weight: 600; }
+
+  /* ---------------- 대시보드 상단 배치: 제목/날짜(왼쪽) + Today's 10 Words 카드(오른쪽 상단) (5단계) ---------------- */
+  .dashboard-top-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+  .dashboard-top-row h2 { margin-bottom: 2px; }
+  .dashboard-top-row .today-date { margin: 0; }
+
+  /* ---------------- Today's 10 Words (5단계, 30일 버전) ---------------- */
+  .eng-words-card { width: 380px; max-width: 100%; flex-shrink: 0; }
+  .eng-progress-bar { font-family: monospace; font-size: 16px; letter-spacing: 1px; color: var(--sage); margin: 2px 0; }
+  .eng-word-list { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; max-height: 360px; overflow-y: auto; }
+  .eng-word-item { padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); }
+  .eng-word-head label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .eng-word-head input[type=checkbox] { width: auto; }
+  .content { flex: 1; overflow-y: auto; padding: 24px; }
+
+  /* ---------------- 카드/공통 요소 ---------------- */
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 18px 20px;
+  }
+  .grid { display: grid; gap: 16px; }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 1100px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 700px) { .grid-4, .grid-2 { grid-template-columns: 1fr; } }
+
+  .stat-num { font-size: 26px; font-weight: 800; }
+  .stat-label { color: var(--text-muted); font-size: 12px; margin-top: 2px; }
+
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
+  }
+  .badge-todo { background: var(--blue-light); color: var(--blue); }
+  .badge-progress { background: var(--sage-light); color: var(--sage); }
+  .badge-review { background: var(--purple-light); color: var(--purple); }
+  .badge-check { background: var(--yellow-light); color: var(--yellow); }
+  .badge-hold { background: #f1e9df; color: var(--brown); }
+  .badge-done { background: var(--gray-light); color: var(--gray); }
+  .badge-urgent { background: var(--danger-light); color: var(--danger); }
+  .badge-overdue { background: var(--danger-light); color: var(--danger); font-weight: 800; }
+
+  .progress-bar { height: 8px; background: var(--gray-light); border-radius: 6px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: var(--sage); }
+
+  .task-list { display: flex; flex-direction: column; gap: 8px; }
+  .task-row {
+    display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); background: var(--surface);
+  }
+  .task-row:hover { border-color: var(--sage); }
+  .task-row .title { flex: 1; font-weight: 600; cursor: pointer; }
+  .task-row .meta { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+
+  .btn { padding: 8px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface); font-weight: 600; font-size: 13px; }
+  .btn-sage { background: var(--sage); color: #fff; border: none; }
+  .btn-outline { background: transparent; }
+  .btn-danger { color: var(--danger); border-color: var(--danger-light); }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+  .fab {
+    position: fixed; bottom: 28px; right: 28px; width: 54px; height: 54px; border-radius: 50%;
+    background: var(--sage); color: #fff; border: none; font-size: 26px; box-shadow: var(--shadow-lg); display: none;
+  }
+
+  table.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.data-table th { text-align: left; color: var(--text-muted); font-size: 12px; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  table.data-table td { padding: 10px; border-bottom: 1px solid var(--border); }
+  table.data-table tr:hover { background: var(--bg); }
+
+  .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+  .filter-bar select, .filter-bar input { padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); }
+
+  /* ---------------- 아이콘 버튼 (완료/삭제/순서변경 등) ---------------- */
+  .icon-btn {
+    width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface);
+    font-size: 13px; padding: 0; flex-shrink: 0;
+  }
+  .icon-btn:disabled { opacity: 0.35; cursor: default; }
+  .icon-btn:hover:not(:disabled) { border-color: var(--sage); }
+
+  /* ---------------- 대시보드 빠른 업무 추가 (3단계 추가) ---------------- */
+  .quick-add-box { margin: 10px 0; padding: 12px; background: var(--bg); border: 1px dashed var(--border); border-radius: var(--radius-sm); }
+  .quick-add-box .form-row { margin-bottom: 0; }
+  .quick-add-box input { padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); }
+
+  /* ---------------- 캘린더 +N건 / 일자 상세 팝업 (3단계 추가) ---------------- */
+  .cal-more { font-size: 10px; color: var(--text-muted); margin-top: 3px; padding: 2px 4px; border-radius: 5px; cursor: pointer; }
+  .cal-more:hover { background: var(--bg); text-decoration: underline; }
+
+  .day-entry { padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .day-entry:last-child { border-bottom: none; }
+  .day-entry-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .day-entry-head .title { font-weight: 700; cursor: pointer; }
+  .day-entry-actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+
+  /* ---------------- 모달 ---------------- */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(40,38,32,0.35); display: flex; align-items: center; justify-content: center; z-index: 100;
+  }
+  .modal {
+    background: var(--surface); border-radius: var(--radius); width: 520px; max-width: 92vw; max-height: 88vh;
+    overflow-y: auto; padding: 24px; box-shadow: var(--shadow-lg);
+  }
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg);
+  }
+  .form-row { display: flex; gap: 10px; }
+  .form-row > * { flex: 1; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+
+  /* ---------------- 캘린더 ---------------- */
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+  .cal-day-head { text-align: center; font-size: 12px; color: var(--text-muted); font-weight: 700; padding-bottom: 6px; }
+  .cal-cell {
+    min-height: 90px; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px;
+    background: var(--surface); cursor: pointer; overflow: hidden;
+  }
+  .cal-cell.today { border-color: var(--sage); background: var(--sage-light); }
+  .cal-cell .daynum { font-size: 12px; font-weight: 700; color: var(--text-muted); }
+  .cal-evt { font-size: 10px; padding: 2px 5px; border-radius: 5px; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cal-evt.personal { background: var(--blue-light); color: var(--cal-personal); font-weight: 700; }
+  .cal-evt.shared { background: #f4ead9; color: var(--cal-shared); }
+  .cal-evt.due { background: var(--danger-light); color: var(--danger); }
+  .cal-evt.done { background: var(--gray-light); color: var(--gray); text-decoration: line-through; }
+
+  /* ---------------- 공통 상태 문구 (로딩/빈 목록/오류) ----------------
+     Scripts.html 여러 곳에서 style="color:var(--text-muted)" 등을 매번
+     인라인으로 반복하던 것을 공통 클래스로 분리했습니다. 색상/크기 값은
+     기존 인라인 스타일과 동일하여 화면 디자인은 그대로 유지됩니다. */
+  .text-muted { color: var(--text-muted); }
+  .text-muted-sm { color: var(--text-muted); font-size: 13px; }
+  .text-danger { color: var(--danger); }
+  .text-danger-sm { color: var(--danger); font-size: 12px; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #333; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; z-index: 200;
+  }
+
+  /* ---------------- 모바일 반응형 ---------------- */
+  @media (max-width: 860px) {
+    .sidebar { position: fixed; left: -220px; top: 0; bottom: 0; z-index: 90; transition: left .2s; }
+    .sidebar.open { left: 0; box-shadow: var(--shadow-lg); }
+    .hamburger { display: block !important; }
+    .topbar { padding: 0 12px; gap: 8px; }
+    .topbar input[type=search] { width: 110px; }
+    .topbar .user-area { font-size: 11px; gap: 6px; }
+    .logout-link { padding: 6px 8px; font-size: 11px; }
+    .content { padding: 14px; }
+    .fab { display: flex; align-items: center; justify-content: center; }
+    table.data-table thead { display: none; }
+    table.data-table, table.data-table tbody, table.data-table tr, table.data-table td { display: block; width: 100%; }
+    table.data-table tr { margin-bottom: 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px; }
+    table.data-table td { border: none; padding: 4px 6px; }
+    .modal { width: 96vw; padding: 18px; }
+
+    /* 모바일에서 버튼/터치 영역을 넉넉하게 확보 */
+    .icon-btn { width: 38px; height: 38px; font-size: 15px; }
+    .btn-sm { padding: 9px 13px; font-size: 13px; }
+    .cal-more { padding: 6px 4px; font-size: 11px; }
+
+    /* 달력 '+N건' 상세 팝업은 모바일에서 하단 슬라이드 창으로 표시 */
+    .day-modal-overlay { align-items: flex-end; }
+    .day-modal-overlay .modal { width: 100%; max-width: 100%; margin: 0; border-radius: var(--radius) var(--radius) 0 0; max-height: 82vh; }
+
+    /* Today's 10 Words 카드는 모바일에서 제목 아래로 전체 폭 차지 */
+    .dashboard-top-row { flex-direction: column; }
+    .eng-words-card { width: 100%; }
+  }
+  .hamburger { display: none; background: none; border: none; font-size: 22px; }
