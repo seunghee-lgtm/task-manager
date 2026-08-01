@@ -17,6 +17,37 @@ const STATUS_EN = { '해야 할 일': 'To Do', '진행 중': 'In Progress', '검
 const PRIORITY_EN = { '긴급': 'Urgent', '높음': 'High', '보통': 'Normal', '낮음': 'Low' };
 const ROLE_EN = { '관리자': 'Administrator', '일반': 'User' };
 
+/* ============================================================
+   (9단계 추가) 영어 UI 툴팁 사전
+   ------------------------------------------------------------
+   영어 UI 문구에 마우스를 올리면 한글 뜻을 툴팁으로 보여줍니다.
+   업무 데이터(제목/메모 등 사용자가 직접 입력한 내용)는 대상이 아니며,
+   시스템이 만드는 고정 문구에만 적용됩니다.
+============================================================ */
+const EN_TOOLTIPS_ = {
+  'Dashboard': '대시보드', "Today's Tasks": '오늘의 업무', 'To Do': '할 일', 'In Progress': '진행 중',
+  'To Review': '검토할 일', 'To Check': '체크할 일', 'On Hold': '보류', 'Completed': '완료',
+  'Overdue': '기한 초과', 'All Tasks': '전체 업무', 'Calendar': '캘린더', 'Words': '단어',
+  'Settings': '설정', 'Task': '업무', 'Tasks': '업무들',
+  'Save': '저장', 'Delete': '삭제', 'Cancel': '취소', 'Edit': '수정', 'Add': '추가', 'Close': '닫기',
+  'Apply': '적용', 'Log In': '로그인', 'Log Out': '로그아웃', 'New Task': '새 업무',
+  'Status': '진행 상태', 'Priority': '우선순위', 'Category': '구분', 'Assignee': '담당자',
+  'Title': '제목', 'Notes': '메모', 'Start Date': '시작일', 'Due Date': '마감일',
+  'Urgent': '긴급', 'High': '높음', 'Normal': '보통', 'Low': '낮음',
+  'Total Tasks': '전체 업무', 'Due Soon': '마감 임박', 'Completed Today': '오늘 완료',
+  "Today's Priorities": '오늘의 우선순위', "Today's Word": '오늘의 문장', "Today's Progress": '오늘의 진행률'
+};
+
+/**
+ * 영어 문구를 툴팁이 붙은 span으로 감싸서 반환합니다.
+ * 사전에 없는 문구는 안전하게 그냥 이스케이프된 텍스트만 반환합니다(에러 없음).
+ */
+function tip(text) {
+  const ko = EN_TOOLTIPS_[text];
+  if (!ko) return esc(text);
+  return `<span class="i18n-tip" data-tip="${esc(ko)}">${esc(text)}</span>`;
+}
+
 let SESSION_TOKEN = sessionStorage.getItem('tm_token') || '';
 let CURRENT_VIEW = 'dashboard';
 let CAL_STATE = { year: new Date().getFullYear(), month: new Date().getMonth() };
@@ -319,7 +350,7 @@ function stopTodayLabelTimer_() {
 function renderDashboard(d) {
   const statCard = (label, num, view) => `
     <div class="card" style="cursor:pointer" onclick="navigateTo('${view}')">
-      <div class="stat-num">${num}</div><div class="stat-label">${label}</div>
+      <div class="stat-num">${num}</div><div class="stat-label">${tip(label)}</div>
     </div>`;
 
   const listBlock = (title, tasks, view) => `
@@ -341,8 +372,8 @@ function renderDashboard(d) {
           <input id="qa-assignee-${key}" placeholder="Assignee">
         </div>
         <div style="margin-top:8px;text-align:right;">
-          <button class="btn btn-sm" onclick="toggleQuickAdd('${key}')">Cancel</button>
-          <button class="btn btn-sm btn-sage" onclick="submitQuickAdd('${key}')">Add</button>
+          <button class="btn btn-sm" onclick="toggleQuickAdd('${key}')">${tip('Cancel')}</button>
+          <button class="btn btn-sm btn-sage" onclick="submitQuickAdd('${key}')">${tip('Add')}</button>
         </div>
       </div>
       ${tasks.length ? renderQuickTaskList_(tasks, key) : '<p class="text-muted-sm">No tasks.</p>'}
@@ -399,8 +430,8 @@ function renderQuickTaskList_(tasks, sectionKey) {
     const canEdit = canModifyTaskClient_(t);
     return `
       <div class="task-row">
-        <span class="badge badge-${cls}">${STATUS_EN[t.status] || t.status}</span>
-        ${t.priority === '긴급' ? `<span class="badge badge-urgent">${PRIORITY_EN['긴급']}</span>` : ''}
+        <span class="badge badge-${cls}">${tip(STATUS_EN[t.status] || t.status)}</span>
+        ${t.priority === '긴급' ? `<span class="badge badge-urgent">${tip(PRIORITY_EN['긴급'])}</span>` : ''}
         <span class="title" onclick="openTaskModal('${t.id}')">${esc(t.title)}</span>
         <span class="meta">${esc(t.assignee || '-')}</span>
         <span class="meta ${overdue ? 'badge badge-overdue' : ''}">${t.dueDate ? 'Due ' + t.dueDate : ''}</span>
@@ -518,30 +549,77 @@ async function loadDailyEnglishWords() {
   box.innerHTML = renderTodaysWord_(data);
 }
 
+let LAST_TODAYS_WORD_ = null; // 클릭 시 상세(단어별 직역/자연스러운 해석) 펼치기용 캐시
+
 function renderTodaysWord_(data) {
   if (!data.word) {
     return `
-      <p class="text-muted-sm">No words yet. Add your first word to get started!</p>
-      <button class="btn btn-sm btn-sage" onclick="navigateTo('words')">+ Add a Word</button>
+      <p class="text-muted-sm">No sentences yet. Add your first sentence to get started!</p>
+      <button class="btn btn-sm btn-sage" onclick="navigateTo('words')">+ Add a Sentence</button>
     `;
   }
+  LAST_TODAYS_WORD_ = data;
   const w = data.word;
+  const keyWordsHtml = (w.keyWords || []).map(kw => `
+    <span class="key-word-chip">
+      <span onclick="event.stopPropagation();">${esc(kw.word)}${kw.meaning ? ' (' + esc(kw.meaning) + ')' : ''}</span>
+      <button class="star-btn" title="Save to My Words" onclick="event.stopPropagation();quickSaveWord('${jsStr_(kw.word)}','${jsStr_(kw.meaning||'')}','${jsStr_(w.word)}')">★</button>
+    </span>`).join('');
+
   return `
-    <p class="text-muted-sm">Word ${data.index} of ${data.totalWords}</p>
+    <p class="text-muted-sm">Sentence ${data.index} of ${data.totalWords}</p>
     <div class="eng-word-item">
       <div class="eng-word-head">
-        <label>
-          <input type="checkbox" ${data.completed ? 'checked' : ''} onchange="toggleWordMemorized('${data.date}','${jsStr_(w.id)}',this.checked)">
-          <b style="font-size:16px;">${esc(w.word)}</b>
-        </label>
+        <input type="checkbox" ${data.completed ? 'checked' : ''} onclick="event.stopPropagation();" onchange="toggleWordMemorized('${data.date}','${jsStr_(w.id)}',this.checked)">
+        <b style="font-size:16px;cursor:pointer;" onclick="toggleTodaysWordDetail_()">${esc(w.word)}</b>
       </div>
-      <div class="text-muted-sm">Meaning: ${esc(w.meaning || '(no translation)')}</div>
-      ${w.example ? `<div class="text-muted-sm">Example: ${esc(w.example)}</div>` : ''}
-      ${w.exampleMeaning ? `<div class="text-muted-sm">Translation: ${esc(w.exampleMeaning)}</div>` : ''}
+      <div class="text-muted-sm">${esc(w.meaning || '(no translation)')}</div>
+      ${keyWordsHtml ? `<p class="text-muted-sm" style="margin:8px 0 2px;">Key words (tap ★ to save):</p><div class="key-word-list">${keyWordsHtml}</div>` : ''}
+      <div id="todaysWordDetail" class="word-detail-box hidden"></div>
     </div>
-    ${data.completed ? '<p style="color:var(--sage);font-weight:700;">🎉 You studied today&#39;s word!</p>' : ''}
-    <div style="margin-top:8px;text-align:right;"><button class="btn btn-sm" onclick="navigateTo('words')">Manage Words</button></div>
+    ${data.completed ? '<p style="color:var(--sage);font-weight:700;">🎉 You studied today&#39;s sentence!</p>' : ''}
+    <div style="margin-top:8px;text-align:right;">
+      <button class="btn btn-sm" onclick="toggleTodaysWordDetail_()">Details</button>
+      <button class="btn btn-sm" onclick="navigateTo('words')">Manage Words</button>
+    </div>
   `;
+}
+
+/**
+ * 문장을 클릭하면 펼쳐지는 상세 영역: 단어별 직역 + 자연스러운 해석.
+ * (문법 설명은 자동 생성하지 않습니다 - 답변 상단 설계 설명 참고)
+ */
+function toggleTodaysWordDetail_() {
+  const el = document.getElementById('todaysWordDetail');
+  if (!el || !LAST_TODAYS_WORD_) return;
+  const hidden = el.classList.contains('hidden');
+  if (hidden) {
+    el.innerHTML = renderTodaysWordDetail_(LAST_TODAYS_WORD_.word);
+    el.classList.remove('hidden');
+  } else {
+    el.classList.add('hidden');
+  }
+}
+
+function renderTodaysWordDetail_(w) {
+  const wordByWord = (w.wordByWord || [])
+    .map(x => esc(x.word) + (x.meaning ? '(' + esc(x.meaning) + ')' : ''))
+    .join(' ');
+  return `
+    <p class="text-muted-sm"><b>Word-by-word:</b><br>${wordByWord || '-'}</p>
+    <p class="text-muted-sm"><b>Natural translation:</b><br>${esc(w.meaning || '-')}</p>
+  `;
+}
+
+/** 문장 안의 핵심 단어를 개인 복습장(★ My Words)에 저장합니다. */
+async function quickSaveWord(word, meaning, sourceSentence) {
+  const pron = prompt('(Optional) Type a Korean pronunciation hint for "' + word + '":', '');
+  const res = await callServerSafe('saveWordToVocabulary', {
+    word: word, meaning: meaning, pronunciation: pron || '', sourceSentence: sourceSentence
+  }, { formatMsg: msg => 'Error saving word: ' + msg });
+  if (!res) return;
+  if (res.success) showToast('Saved to My Words.');
+  else showToast(res.message || 'Failed to save.');
 }
 
 async function toggleWordMemorized(dateStr, wordId, checked) {
@@ -552,20 +630,29 @@ async function toggleWordMemorized(dateStr, wordId, checked) {
 }
 
 let LAST_WORDS_LIST_ = [];
+let LAST_SAVED_WORDS_ = [];
 
 async function loadWordsView() {
   const el = document.getElementById('view-words');
   el.innerHTML = '<h2>📖 Words</h2><p class="text-muted">Loading...</p>';
   const list = await callServerSafe('listMyWords', {}, {
     targetElId: 'view-words',
-    formatMsg: msg => 'Failed to load words: ' + msg
+    formatMsg: msg => 'Failed to load sentences: ' + msg
   });
   if (!list) return;
   LAST_WORDS_LIST_ = list;
-  el.innerHTML = renderWordsView_(list);
+
+  const saved = await callServerSafe('listSavedWords', {}, {
+    targetElId: 'view-words',
+    formatMsg: msg => 'Failed to load saved words: ' + msg
+  });
+  if (!saved) return;
+  LAST_SAVED_WORDS_ = saved;
+
+  el.innerHTML = renderWordsView_(list, saved);
 }
 
-function renderWordsView_(list) {
+function renderWordsView_(list, saved) {
   const rows = list.slice().reverse().map(w => `
     <tr>
       <td>${esc(w.word)}</td>
@@ -573,33 +660,65 @@ function renderWordsView_(list) {
       <td>${esc(w.example || '-')}</td>
       <td>${esc(w.exampleMeaning || '-')}</td>
       <td>
-        <button class="btn btn-sm" onclick="openEditWordModal('${jsStr_(w.id)}')">Edit</button>
-        <button class="btn btn-sm btn-danger" onclick="doDeleteMyWord('${jsStr_(w.id)}')">Delete</button>
+        <button class="btn btn-sm" onclick="openEditWordModal('${jsStr_(w.id)}')">${tip('Edit')}</button>
+        <button class="btn btn-sm btn-danger" onclick="doDeleteMyWord('${jsStr_(w.id)}')">${tip('Delete')}</button>
       </td>
+    </tr>`).join('');
+
+  const savedRows = saved.slice().reverse().map(w => `
+    <tr>
+      <td>${esc(w.word)}</td>
+      <td>${esc(w.meaning || '-')}</td>
+      <td>${esc(w.pronunciation || '-')}</td>
+      <td>${esc(w.sourceSentence || '-')}</td>
+      <td><input type="checkbox" ${w.completed ? 'checked' : ''} onchange="toggleSavedWordMemorized('${jsStr_(w.id)}',this.checked)"></td>
+      <td><button class="btn btn-sm btn-danger" onclick="doDeleteSavedWord('${jsStr_(w.id)}')">${tip('Delete')}</button></td>
     </tr>`).join('');
 
   return `
     <h2>📖 Words</h2>
-    <p class="text-muted-sm">Add your own English words below. The Korean meaning is translated automatically. The dashboard shows one word per day from this list.</p>
-    <p class="text-muted-sm">Tip: You can also type a word directly into the "EnglishWords" tab of the Google Sheet (just the Word column) — it will be auto-translated and added here automatically.</p>
+    <p class="text-muted-sm">Add your own English sentences below. The Korean meaning is translated automatically. The dashboard shows one sentence per day from this list.</p>
+    <p class="text-muted-sm">Tip: You can also type a sentence directly into the "EnglishWords" tab of the Google Sheet (just the Word column) — it will be auto-translated and added here automatically.</p>
     <div class="card" style="margin-bottom:16px;">
-      <h3>+ Add a Word</h3>
+      <h3>+ Add a Sentence</h3>
       <div class="form-row">
-        <input id="nw-word" placeholder="English word or sentence">
-        <input id="nw-example" placeholder="Example sentence (optional)">
+        <input id="nw-word" placeholder="English sentence (e.g. They were busy yesterday.)">
+        <input id="nw-example" placeholder="Optional note">
       </div>
       <div style="margin-top:8px;text-align:right;">
-        <button class="btn btn-sage" id="addWordBtn" onclick="submitAddWord()">Add</button>
+        <button class="btn btn-sage" id="addWordBtn" onclick="submitAddWord()">${tip('Add')}</button>
       </div>
     </div>
-    <div class="card">
-      <h3>My Words <span class="text-muted-sm" style="font-weight:400;">(${list.length})</span></h3>
+    <div class="card" style="margin-bottom:16px;">
+      <h3>My Sentences <span class="text-muted-sm" style="font-weight:400;">(${list.length})</span></h3>
       <table class="data-table">
-        <thead><tr><th>Word</th><th>Meaning</th><th>Example</th><th>Translation</th><th>Actions</th></tr></thead>
-        <tbody>${rows || '<tr><td colspan="5" class="text-muted-sm">No words yet. Add your first word above.</td></tr>'}</tbody>
+        <thead><tr><th>Sentence</th><th>Meaning</th><th>Note</th><th>Note Translation</th><th>Actions</th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="5" class="text-muted-sm">No sentences yet. Add your first sentence above.</td></tr>'}</tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3>⭐ My Words <span class="text-muted-sm" style="font-weight:400;">(${saved.length})</span></h3>
+      <p class="text-muted-sm">Words you starred from Today's Word. Check off the ones you've memorized.</p>
+      <table class="data-table">
+        <thead><tr><th>Word</th><th>Meaning</th><th>Pronunciation</th><th>From Sentence</th><th>${tip('Completed')}</th><th>Actions</th></tr></thead>
+        <tbody>${savedRows || '<tr><td colspan="6" class="text-muted-sm">No saved words yet. Tap the ★ next to a key word in Today\'s Word.</td></tr>'}</tbody>
       </table>
     </div>
   `;
+}
+
+async function toggleSavedWordMemorized(id, checked) {
+  const res = await callServerSafe('setSavedWordMemorized', { id: id, completed: checked }, { formatMsg: msg => 'Error: ' + msg });
+  if (!res) return;
+  if (!res.success) showToast(res.message || 'Failed to update.');
+}
+
+async function doDeleteSavedWord(id) {
+  if (!confirm('Delete this saved word?')) return;
+  const res = await callServerSafe('deleteSavedWord', { id: id }, { formatMsg: msg => 'Error: ' + msg });
+  if (!res) return;
+  if (res.success) { showToast('Deleted.'); loadWordsView(); }
+  else showToast(res.message || 'Failed to delete.');
 }
 
 async function submitAddWord() {
@@ -638,8 +757,8 @@ function openEditWordModal(id) {
       <div class="form-group"><label>Example</label><input id="ew-example" value="${esc(w.example||'')}"></div>
       <div class="form-group"><label>Translation</label><input id="ew-exmeaning" value="${esc(w.exampleMeaning||'')}"></div>
       <div class="modal-actions">
-        <button class="btn" onclick="closeWordEditModal_()">Cancel</button>
-        <button class="btn btn-sage" onclick="saveWordEdit('${jsStr_(id)}')">Save</button>
+        <button class="btn" onclick="closeWordEditModal_()">${tip('Cancel')}</button>
+        <button class="btn btn-sage" onclick="saveWordEdit('${jsStr_(id)}')">${tip('Save')}</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
@@ -704,7 +823,7 @@ function buildTaskListShell(view) {
         <option value="priority">Priority</option>
         <option value="createdDate">Created Date</option>
       </select>
-      <button class="btn" onclick="refreshTaskList('${view}')">Apply</button>
+      <button class="btn" onclick="refreshTaskList('${view}')">${tip('Apply')}</button>
     </div>
     <div id="list-${view}" class="task-list"></div>
     <div id="pager-${view}" style="margin-top:14px;text-align:center;color:var(--text-muted);font-size:12px;"></div>
@@ -741,8 +860,8 @@ function renderTaskList(tasks) {
     const overdue = t.dueDate && t.dueDate < todayStr() && t.status !== '완료';
     return `
       <div class="task-row">
-        <span class="badge badge-${cls}">${STATUS_EN[t.status] || t.status}</span>
-        ${t.priority === '긴급' ? `<span class="badge badge-urgent">${PRIORITY_EN['긴급']}</span>` : ''}
+        <span class="badge badge-${cls}">${tip(STATUS_EN[t.status] || t.status)}</span>
+        ${t.priority === '긴급' ? `<span class="badge badge-urgent">${tip(PRIORITY_EN['긴급'])}</span>` : ''}
         <span class="title" onclick="openTaskModal('${t.id}')">${esc(t.title)}</span>
         <span class="meta">${esc(t.assignee || '-')}</span>
         <span class="meta ${overdue ? 'badge badge-overdue' : ''}">${t.dueDate ? 'Due ' + t.dueDate : ''}</span>
@@ -791,19 +910,19 @@ async function openTaskModal(taskId) {
     <div class="modal">
       <h2>${task ? (canEdit ? 'Edit Task' : 'Task Details (Read-only)') : 'New Task'}</h2>
       ${!canEdit ? '<p class="text-muted-sm" style="margin-bottom:10px;">Only the assignee, creator, or an administrator can edit this task.</p>' : ''}
-      <div class="form-group"><label>Title *</label><input id="f-title" ${ro} value="${task ? esc(task.title) : ''}"></div>
-      <div class="form-group"><label>Notes</label><textarea id="f-detail" rows="3" ${ro}>${task ? esc(task.detail) : ''}</textarea></div>
+      <div class="form-group"><label>${tip('Title')} *</label><input id="f-title" ${ro} value="${task ? esc(task.title) : ''}"></div>
+      <div class="form-group"><label>${tip('Notes')}</label><textarea id="f-detail" rows="3" ${ro}>${task ? esc(task.detail) : ''}</textarea></div>
       <div class="form-row">
-        <div class="form-group"><label>Category</label><input id="f-category" ${ro} value="${task ? esc(task.category) : ''}"></div>
-        <div class="form-group"><label>Assignee</label><input id="f-assignee" ${ro} value="${task ? esc(task.assignee) : ''}"></div>
+        <div class="form-group"><label>${tip('Category')}</label><input id="f-category" ${ro} value="${task ? esc(task.category) : ''}"></div>
+        <div class="form-group"><label>${tip('Assignee')}</label><input id="f-assignee" ${ro} value="${task ? esc(task.assignee) : ''}"></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label>Status</label><select id="f-status" ${ro}>${STATUS_LIST.map(s => `<option value="${s}" ${task && task.status===s?'selected':''}>${STATUS_EN[s]}</option>`).join('')}</select></div>
-        <div class="form-group"><label>Priority</label><select id="f-priority" ${ro}>${PRIORITY_LIST.map(p => `<option value="${p}" ${task && task.priority===p?'selected':''}>${PRIORITY_EN[p]}</option>`).join('')}</select></div>
+        <div class="form-group"><label>${tip('Status')}</label><select id="f-status" ${ro}>${STATUS_LIST.map(s => `<option value="${s}" ${task && task.status===s?'selected':''}>${STATUS_EN[s]}</option>`).join('')}</select></div>
+        <div class="form-group"><label>${tip('Priority')}</label><select id="f-priority" ${ro}>${PRIORITY_LIST.map(p => `<option value="${p}" ${task && task.priority===p?'selected':''}>${PRIORITY_EN[p]}</option>`).join('')}</select></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label>Start Date</label><input type="date" id="f-start" ${ro} value="${task ? task.startDate : ''}"></div>
-        <div class="form-group"><label>Due Date</label><input type="date" id="f-due" ${ro} value="${task ? task.dueDate : ''}"></div>
+        <div class="form-group"><label>${tip('Start Date')}</label><input type="date" id="f-start" ${ro} value="${task ? task.startDate : ''}"></div>
+        <div class="form-group"><label>${tip('Due Date')}</label><input type="date" id="f-due" ${ro} value="${task ? task.dueDate : ''}"></div>
       </div>
       <div class="form-group" id="holdReasonGroup" style="display:none;">
         <label>Hold Reason *</label><input id="f-holdreason" ${ro} value="${task ? esc(task.holdReason||'') : ''}">
@@ -813,9 +932,9 @@ async function openTaskModal(taskId) {
         <select id="f-caltype"><option value="personal">Personal Calendar</option><option value="shared">Shared Calendar</option></select>
       </div>` : ''}
       <div class="modal-actions">
-        ${task && canEdit ? `<button class="btn btn-danger" onclick="doDeleteTask('${task.id}')">Delete</button>` : ''}
+        ${task && canEdit ? `<button class="btn btn-danger" onclick="doDeleteTask('${task.id}')">${tip('Delete')}</button>` : ''}
         <button class="btn" onclick="closeTaskModal()">${canEdit ? 'Cancel' : 'Close'}</button>
-        ${canEdit ? `<button class="btn btn-sage" id="saveTaskBtn" onclick="saveTask(${task ? "'"+task.id+"'" : 'null'})">Save</button>` : ''}
+        ${canEdit ? `<button class="btn btn-sage" id="saveTaskBtn" onclick="saveTask(${task ? "'"+task.id+"'" : 'null'})">${tip('Save')}</button>` : ''}
       </div>
     </div>`;
   document.body.appendChild(overlay);
@@ -1000,7 +1119,7 @@ function openDayModal(dateStr, focusIdx) {
       <h2>Schedule — ${formatDateEn_(dateStr)}</h2>
       <div id="dayModalList">${entries.length ? renderDayEntries_(dateStr, entries) : '<p class="text-muted-sm">No events scheduled.</p>'}</div>
       <div class="modal-actions">
-        <button class="btn" onclick="closeDayModal()">Close</button>
+        <button class="btn" onclick="closeDayModal()">${tip('Close')}</button>
         <button class="btn btn-sage" onclick="closeDayModal();calDayAddTask('${dateStr}')">+ Add Event</button>
       </div>
     </div>`;
@@ -1022,13 +1141,13 @@ function renderDayEntries_(dateStr, entries) {
         <div class="day-entry" id="day-entry-${idx}">
           <div class="day-entry-head">
             <span class="title" onclick="closeDayModal();openTaskModal('${e.taskId}')">${esc(e.title.replace(/^(Due|Done): /, ''))}</span>
-            <span class="badge badge-${STATUS_CLASS[e.status]||'todo'}">${STATUS_EN[e.status] || esc(e.status)}</span>
+            <span class="badge badge-${STATUS_CLASS[e.status]||'todo'}">${tip(STATUS_EN[e.status] || e.status)}</span>
           </div>
           <div class="text-muted-sm">Assignee: ${esc(e.assignee || '-')}${e.memo ? ' · ' + esc(e.memo) : ''}</div>
           <div class="day-entry-actions">
             ${e.status !== '완료' ? `<button class="btn btn-sm" onclick="dayQuickComplete('${e.taskId}')">Complete</button>` : ''}
-            <button class="btn btn-sm" onclick="closeDayModal();openTaskModal('${e.taskId}')">Edit</button>
-            <button class="btn btn-sm btn-danger" onclick="dayQuickDelete('${e.taskId}')">Delete</button>
+            <button class="btn btn-sm" onclick="closeDayModal();openTaskModal('${e.taskId}')">${tip('Edit')}</button>
+            <button class="btn btn-sm btn-danger" onclick="dayQuickDelete('${e.taskId}')">${tip('Delete')}</button>
           </div>
         </div>`;
     }
@@ -1040,8 +1159,8 @@ function renderDayEntries_(dateStr, entries) {
         </div>
         ${e.memo ? `<div class="text-muted-sm">${esc(e.memo)}</div>` : ''}
         <div class="day-entry-actions">
-          <button class="btn btn-sm" onclick="editStandaloneEvent('${dateStr}',${idx})">Edit</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteStandaloneEvent('${dateStr}',${idx})">Delete</button>
+          <button class="btn btn-sm" onclick="editStandaloneEvent('${dateStr}',${idx})">${tip('Edit')}</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteStandaloneEvent('${dateStr}',${idx})">${tip('Delete')}</button>
         </div>
       </div>`;
   }).join('');
@@ -1087,10 +1206,10 @@ function editStandaloneEvent(dateStr, idx) {
         <div class="form-group"><label>Start Time</label><input type="time" id="ev-start" value="${startTime}"></div>
         <div class="form-group"><label>End Time</label><input type="time" id="ev-end" value="${endTime}"></div>
       </div>
-      <div class="form-group"><label>Notes</label><textarea id="ev-memo" rows="3">${esc(entry.memo||'')}</textarea></div>
+      <div class="form-group"><label>${tip('Notes')}</label><textarea id="ev-memo" rows="3">${esc(entry.memo||'')}</textarea></div>
       <div class="modal-actions">
-        <button class="btn" onclick="closeEventEditModal_()">Cancel</button>
-        <button class="btn btn-sage" onclick="saveStandaloneEvent('${dateStr}',${idx})">Save</button>
+        <button class="btn" onclick="closeEventEditModal_()">${tip('Cancel')}</button>
+        <button class="btn btn-sage" onclick="saveStandaloneEvent('${dateStr}',${idx})">${tip('Save')}</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
