@@ -31,27 +31,55 @@ function canModifyTaskClient_(task) {
 }
 
 /* ============================================================
-   API 호출 (fetch 기반) — google.script.run을 대체하는 부분
+   API 호출 (JSONP 방식) — google.script.run을 대체하는 부분
    ------------------------------------------------------------
-   반드시 POST + Content-Type: text/plain 으로 보냅니다.
-   (application/json으로 보내면 브라우저가 사전 확인 요청(OPTIONS)을
-   먼저 보내는데, Apps Script는 이걸 처리하지 못해 요청이 막힙니다.
-   text/plain으로 보내면 이 사전 확인 단계가 생략되어 정상 통신됩니다.
-   내용은 어차피 JSON 문자열이라 서버에서 파싱하는 데는 문제 없습니다.)
+   fetch()로 POST를 보내면 Google Apps Script가 CORS 응답 헤더를
+   붙여주지 않아 브라우저가 응답을 읽지 못하고 막아버립니다.
+   <script src="..."> 태그로 결과를 불러오는 JSONP 방식은 이 제한을
+   받지 않아 안정적으로 동작합니다. (조건: GET 방식이라 매우 긴 텍스트를
+   보낼 때는 주소 길이 제한이 있을 수 있습니다.)
 ============================================================ */
+let JSONP_COUNTER_ = 0;
 function callApi_(action, params, token) {
-  const body = {
-    action: action,
-    token: (token !== undefined ? token : SESSION_TOKEN) || '',
-    params: params || {}
-  };
-  return fetch(window.API_BASE_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(body)
-  }).then(res => {
-    if (!res.ok) throw new Error('Network error (HTTP ' + res.status + ')');
-    return res.json();
+  return new Promise((resolve, reject) => {
+    const cbName = 'tm_cb_' + Date.now() + '_' + (JSONP_COUNTER_++);
+    const script = document.createElement('script');
+    let finished = false;
+
+    const cleanup = () => {
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      clearTimeout(timer);
+    };
+
+    window[cbName] = (data) => {
+      if (finished) return;
+      finished = true;
+      cleanup();
+      resolve(data);
+    };
+
+    const timer = setTimeout(() => {
+      if (finished) return;
+      finished = true;
+      cleanup();
+      reject(new Error('Request timed out. Please check your network connection.'));
+    }, 30000);
+
+    script.onerror = () => {
+      if (finished) return;
+      finished = true;
+      cleanup();
+      reject(new Error('Network error while contacting the server.'));
+    };
+
+    const url = window.API_BASE_URL
+      + '?action=' + encodeURIComponent(action)
+      + '&token=' + encodeURIComponent((token !== undefined ? token : SESSION_TOKEN) || '')
+      + '&params=' + encodeURIComponent(JSON.stringify(params || {}))
+      + '&callback=' + cbName;
+    script.src = url;
+    document.body.appendChild(script);
   });
 }
 
