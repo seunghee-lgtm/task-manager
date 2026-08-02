@@ -62,23 +62,50 @@ function canModifyTaskClient_(task) {
 }
 
 /* ============================================================
-   API 호출 (fetch GET 방식, 11단계로 교체)
+   API 호출 (iframe + postMessage 방식, 10단계로 교체)
    ------------------------------------------------------------
-   iframe+postMessage 방식이 구글 쪽에서 404로 막히는 것이 확인되어,
-   이번엔 가장 단순한 fetch() GET 요청으로 다시 시도합니다. GET 요청은
-   "단순 요청(simple request)"이라 사전 확인(OPTIONS)이 필요 없고,
-   Google Apps Script가 GET 응답에는 cross-origin 읽기를 허용하는
-   경우가 많다는 점을 이용합니다.
+   <script src="..."> 로 결과를 불러오는 방식(JSONP)이 구글의 최근 보안
+   정책 때문에 외부 사이트에서 막히는 경우가 있어서, 대신 눈에 보이지 않는
+   iframe 안에서 이 주소를 "정상적인 페이지 이동"처럼 열고, 그 안의
+   자바스크립트가 postMessage로 결과를 전달받는 방식으로 바꿨습니다.
+   이렇게 하면 브라우저 주소창에 직접 이 주소를 입력해서 들어가는 것과
+   동일하게 취급되어 훨씬 안정적으로 통과됩니다.
 ============================================================ */
-function callApi_(action, params, token) {
-  const url = window.API_BASE_URL
-    + '?action=' + encodeURIComponent(action)
-    + '&token=' + encodeURIComponent((token !== undefined ? token : SESSION_TOKEN) || '')
-    + '&params=' + encodeURIComponent(JSON.stringify(params || {}));
+let API_REQUEST_COUNTER_ = 0;
+const API_PENDING_ = {};
 
-  return fetch(url, { method: 'GET' }).then(res => {
-    if (!res.ok) throw new Error('Network error (HTTP ' + res.status + ')');
-    return res.json();
+window.addEventListener('message', (event) => {
+  const data = event.data;
+  if (!data || !data.__tmApi || !data.requestId) return;
+  const pending = API_PENDING_[data.requestId];
+  if (!pending) return;
+  delete API_PENDING_[data.requestId];
+  clearTimeout(pending.timer);
+  if (pending.iframe && pending.iframe.parentNode) pending.iframe.parentNode.removeChild(pending.iframe);
+  pending.resolve(data.data);
+});
+
+function callApi_(action, params, token) {
+  return new Promise((resolve, reject) => {
+    const requestId = 'req_' + Date.now() + '_' + (API_REQUEST_COUNTER_++);
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+
+    const timer = setTimeout(() => {
+      delete API_PENDING_[requestId];
+      if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+      reject(new Error('Request timed out. Please check your network connection.'));
+    }, 30000);
+
+    API_PENDING_[requestId] = { resolve: resolve, iframe: iframe, timer: timer };
+
+    const url = window.API_BASE_URL
+      + '?action=' + encodeURIComponent(action)
+      + '&token=' + encodeURIComponent((token !== undefined ? token : SESSION_TOKEN) || '')
+      + '&params=' + encodeURIComponent(JSON.stringify(params || {}))
+      + '&viaFrame=1&requestId=' + encodeURIComponent(requestId);
+    iframe.src = url;
+    document.body.appendChild(iframe);
   });
 }
 
