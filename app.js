@@ -35,7 +35,7 @@ const EN_TOOLTIPS_ = {
   'Title': '제목', 'Notes': '메모', 'Start Date': '시작일', 'Due Date': '마감일',
   'Urgent': '긴급', 'High': '높음', 'Normal': '보통', 'Low': '낮음',
   'Total Tasks': '전체 업무', 'Due Soon': '마감 임박', 'Completed Today': '오늘 완료',
-  "Today's Priorities": '오늘의 우선순위', "Today's Word": '오늘의 문장', "Today's Progress": '오늘의 진행률'
+  "Today's Priorities": '오늘의 우선순위', "Today's Word": '오늘의 문장', "This Hour's Word": '이번 시간의 문장', "Today's Progress": '오늘의 진행률'
 };
 
 /**
@@ -62,50 +62,23 @@ function canModifyTaskClient_(task) {
 }
 
 /* ============================================================
-   API 호출 (iframe + postMessage 방식, 10단계로 교체)
+   API 호출 (fetch GET 방식, 11단계로 교체)
    ------------------------------------------------------------
-   <script src="..."> 로 결과를 불러오는 방식(JSONP)이 구글의 최근 보안
-   정책 때문에 외부 사이트에서 막히는 경우가 있어서, 대신 눈에 보이지 않는
-   iframe 안에서 이 주소를 "정상적인 페이지 이동"처럼 열고, 그 안의
-   자바스크립트가 postMessage로 결과를 전달받는 방식으로 바꿨습니다.
-   이렇게 하면 브라우저 주소창에 직접 이 주소를 입력해서 들어가는 것과
-   동일하게 취급되어 훨씬 안정적으로 통과됩니다.
+   iframe+postMessage 방식이 구글 쪽에서 404로 막히는 것이 확인되어,
+   이번엔 가장 단순한 fetch() GET 요청으로 다시 시도합니다. GET 요청은
+   "단순 요청(simple request)"이라 사전 확인(OPTIONS)이 필요 없고,
+   Google Apps Script가 GET 응답에는 cross-origin 읽기를 허용하는
+   경우가 많다는 점을 이용합니다.
 ============================================================ */
-let API_REQUEST_COUNTER_ = 0;
-const API_PENDING_ = {};
-
-window.addEventListener('message', (event) => {
-  const data = event.data;
-  if (!data || !data.__tmApi || !data.requestId) return;
-  const pending = API_PENDING_[data.requestId];
-  if (!pending) return;
-  delete API_PENDING_[data.requestId];
-  clearTimeout(pending.timer);
-  if (pending.iframe && pending.iframe.parentNode) pending.iframe.parentNode.removeChild(pending.iframe);
-  pending.resolve(data.data);
-});
-
 function callApi_(action, params, token) {
-  return new Promise((resolve, reject) => {
-    const requestId = 'req_' + Date.now() + '_' + (API_REQUEST_COUNTER_++);
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
+  const url = window.API_BASE_URL
+    + '?action=' + encodeURIComponent(action)
+    + '&token=' + encodeURIComponent((token !== undefined ? token : SESSION_TOKEN) || '')
+    + '&params=' + encodeURIComponent(JSON.stringify(params || {}));
 
-    const timer = setTimeout(() => {
-      delete API_PENDING_[requestId];
-      if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
-      reject(new Error('Request timed out. Please check your network connection.'));
-    }, 30000);
-
-    API_PENDING_[requestId] = { resolve: resolve, iframe: iframe, timer: timer };
-
-    const url = window.API_BASE_URL
-      + '?action=' + encodeURIComponent(action)
-      + '&token=' + encodeURIComponent((token !== undefined ? token : SESSION_TOKEN) || '')
-      + '&params=' + encodeURIComponent(JSON.stringify(params || {}))
-      + '&viaFrame=1&requestId=' + encodeURIComponent(requestId);
-    iframe.src = url;
-    document.body.appendChild(iframe);
+  return fetch(url, { method: 'GET' }).then(res => {
+    if (!res.ok) throw new Error('Network error (HTTP ' + res.status + ')');
+    return res.json();
   });
 }
 
@@ -210,6 +183,7 @@ function forceShowLogin_() {
   SESSION_TOKEN = '';
   CURRENT_USER_ID = ''; CURRENT_ROLE = ''; CURRENT_USER_NAME = '';
   stopTodayLabelTimer_();
+  stopHourlyWordTimer_();
   const dash = document.getElementById('view-dashboard');
   if (dash) dash.innerHTML = '';
   document.querySelectorAll('.view-panel').forEach(el => { el.innerHTML = ''; });
@@ -293,7 +267,7 @@ function navigateTo(view, params) {
   if (panel) panel.classList.remove('hidden');
   document.getElementById('fabBtn').style.display = (view === 'dashboard' || view === 'words') ? 'none' : 'flex';
 
-  if (view !== 'dashboard') stopTodayLabelTimer_();
+  if (view !== 'dashboard') { stopTodayLabelTimer_(); stopHourlyWordTimer_(); }
 
   if (view === 'dashboard') loadDashboard();
   else if (view === 'calendar') loadCalendar();
@@ -317,6 +291,7 @@ async function loadDashboard() {
   el.innerHTML = renderDashboard(d);
   startTodayLabelTimer_();
   loadDailyEnglishWords();
+  startHourlyWordTimer_();
 }
 
 let LAST_DASHBOARD_TASKS = { priority: [], review: [], check: [] };
@@ -340,6 +315,24 @@ function startTodayLabelTimer_() {
 }
 function stopTodayLabelTimer_() {
   if (TODAY_LABEL_TIMER_) { clearInterval(TODAY_LABEL_TIMER_); TODAY_LABEL_TIMER_ = null; }
+}
+
+/**
+ * (GPT 제안 기능을 기존 구조에 맞게 통합) 대시보드를 계속 보고 있으면
+ * 1시간마다 "This Hour's Word" 카드를 자동으로 새로고침합니다.
+ * 대시보드를 벗어나면(navigateTo, 로그아웃) 자동으로 멈춥니다.
+ */
+let HOURLY_WORD_TIMER_ = null;
+function startHourlyWordTimer_() {
+  stopHourlyWordTimer_();
+  HOURLY_WORD_TIMER_ = setInterval(() => {
+    const box = document.getElementById('englishWordsBox');
+    if (!box) { stopHourlyWordTimer_(); return; }
+    loadDailyEnglishWords();
+  }, 60 * 60 * 1000);
+}
+function stopHourlyWordTimer_() {
+  if (HOURLY_WORD_TIMER_) { clearInterval(HOURLY_WORD_TIMER_); HOURLY_WORD_TIMER_ = null; }
 }
 
 function renderDashboard(d) {
@@ -383,7 +376,7 @@ function renderDashboard(d) {
         <p class="today-date" id="todayDateLabel">Today: ${todaySeoulLabel_()}</p>
       </div>
       <div class="card eng-words-card" id="englishWordsCard">
-        <h3>📖 Today's Word</h3>
+        <h3>📖 This Hour's Word</h3>
         <div id="englishWordsBox"><p class="text-muted">Loading...</p></div>
       </div>
     </div>
@@ -536,12 +529,19 @@ async function loadDailyEnglishWords() {
   const box = document.getElementById('englishWordsBox');
   if (!box) return;
   box.innerHTML = '<p class="text-muted">Loading...</p>';
-  const data = await callServerSafe('getDailyWords', {}, {
+  const data = await callServerSafe('getHourlyWords', {}, {
     targetElId: 'englishWordsBox',
     formatMsg: msg => 'Failed to load word: ' + msg
   });
   if (!data) return;
   box.innerHTML = renderTodaysWord_(data);
+  if (data.changesEveryHour) {
+    const info = document.createElement('p');
+    info.className = 'text-muted-sm';
+    info.style.marginTop = '6px';
+    info.textContent = 'Changes every hour';
+    box.appendChild(info);
+  }
 }
 
 let LAST_TODAYS_WORD_ = null; // 클릭 시 상세(단어별 직역/자연스러운 해석) 펼치기용 캐시
@@ -572,7 +572,7 @@ function renderTodaysWord_(data) {
       ${keyWordsHtml ? `<p class="text-muted-sm" style="margin:8px 0 2px;">Key words (tap ★ to save):</p><div class="key-word-list">${keyWordsHtml}</div>` : ''}
       <div id="todaysWordDetail" class="word-detail-box hidden"></div>
     </div>
-    ${data.completed ? '<p style="color:var(--sage);font-weight:700;">🎉 You studied today&#39;s sentence!</p>' : ''}
+    ${data.completed ? '<p style="color:var(--sage);font-weight:700;">🎉 You studied this hour&#39;s sentence!</p>' : ''}
     <div style="margin-top:8px;text-align:right;">
       <button class="btn btn-sm" onclick="toggleTodaysWordDetail_()">Details</button>
       <button class="btn btn-sm" onclick="navigateTo('words')">Manage Words</button>
@@ -693,7 +693,7 @@ function renderWordsView_(list, saved) {
     </div>
     <div class="card">
       <h3>⭐ My Words <span class="text-muted-sm" style="font-weight:400;">(${saved.length})</span></h3>
-      <p class="text-muted-sm">Words you starred from Today's Word. Check off the ones you've memorized.</p>
+      <p class="text-muted-sm">Words you starred from This Hour's Word. Check off the ones you've memorized.</p>
       <table class="data-table">
         <thead><tr><th>Word</th><th>Meaning</th><th>Pronunciation</th><th>From Sentence</th><th>${tip('Completed')}</th><th>Actions</th></tr></thead>
         <tbody>${savedRows || '<tr><td colspan="6" class="text-muted-sm">No saved words yet. Tap the ★ next to a key word in Today\'s Word.</td></tr>'}</tbody>
