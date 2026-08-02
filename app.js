@@ -62,55 +62,50 @@ function canModifyTaskClient_(task) {
 }
 
 /* ============================================================
-   API 호출 (JSONP 방식) — google.script.run을 대체하는 부분
+   API 호출 (iframe + postMessage 방식, 10단계로 교체)
    ------------------------------------------------------------
-   fetch()로 POST를 보내면 Google Apps Script가 CORS 응답 헤더를
-   붙여주지 않아 브라우저가 응답을 읽지 못하고 막아버립니다.
-   <script src="..."> 태그로 결과를 불러오는 JSONP 방식은 이 제한을
-   받지 않아 안정적으로 동작합니다. (조건: GET 방식이라 매우 긴 텍스트를
-   보낼 때는 주소 길이 제한이 있을 수 있습니다.)
+   <script src="..."> 로 결과를 불러오는 방식(JSONP)이 구글의 최근 보안
+   정책 때문에 외부 사이트에서 막히는 경우가 있어서, 대신 눈에 보이지 않는
+   iframe 안에서 이 주소를 "정상적인 페이지 이동"처럼 열고, 그 안의
+   자바스크립트가 postMessage로 결과를 전달받는 방식으로 바꿨습니다.
+   이렇게 하면 브라우저 주소창에 직접 이 주소를 입력해서 들어가는 것과
+   동일하게 취급되어 훨씬 안정적으로 통과됩니다.
 ============================================================ */
-let JSONP_COUNTER_ = 0;
+let API_REQUEST_COUNTER_ = 0;
+const API_PENDING_ = {};
+
+window.addEventListener('message', (event) => {
+  const data = event.data;
+  if (!data || !data.__tmApi || !data.requestId) return;
+  const pending = API_PENDING_[data.requestId];
+  if (!pending) return;
+  delete API_PENDING_[data.requestId];
+  clearTimeout(pending.timer);
+  if (pending.iframe && pending.iframe.parentNode) pending.iframe.parentNode.removeChild(pending.iframe);
+  pending.resolve(data.data);
+});
+
 function callApi_(action, params, token) {
   return new Promise((resolve, reject) => {
-    const cbName = 'tm_cb_' + Date.now() + '_' + (JSONP_COUNTER_++);
-    const script = document.createElement('script');
-    let finished = false;
-
-    const cleanup = () => {
-      delete window[cbName];
-      if (script.parentNode) script.parentNode.removeChild(script);
-      clearTimeout(timer);
-    };
-
-    window[cbName] = (data) => {
-      if (finished) return;
-      finished = true;
-      cleanup();
-      resolve(data);
-    };
+    const requestId = 'req_' + Date.now() + '_' + (API_REQUEST_COUNTER_++);
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
 
     const timer = setTimeout(() => {
-      if (finished) return;
-      finished = true;
-      cleanup();
+      delete API_PENDING_[requestId];
+      if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
       reject(new Error('Request timed out. Please check your network connection.'));
     }, 30000);
 
-    script.onerror = () => {
-      if (finished) return;
-      finished = true;
-      cleanup();
-      reject(new Error('Network error while contacting the server.'));
-    };
+    API_PENDING_[requestId] = { resolve: resolve, iframe: iframe, timer: timer };
 
     const url = window.API_BASE_URL
       + '?action=' + encodeURIComponent(action)
       + '&token=' + encodeURIComponent((token !== undefined ? token : SESSION_TOKEN) || '')
       + '&params=' + encodeURIComponent(JSON.stringify(params || {}))
-      + '&callback=' + cbName;
-    script.src = url;
-    document.body.appendChild(script);
+      + '&viaFrame=1&requestId=' + encodeURIComponent(requestId);
+    iframe.src = url;
+    document.body.appendChild(iframe);
   });
 }
 
