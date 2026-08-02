@@ -361,3 +361,22 @@
     white-space: nowrap;
   }
 }
+/* 업무 카드 모바일 정렬 */
+.task-row{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:flex-start;
+}
+
+.task-row .title{
+    width:100%;
+    white-space:normal;
+    word-break:keep-all;
+    overflow-wrap:anywhere;
+    line-height:1.5;
+}
+
+.task-row .meta{
+    width:100%;
+    white-space:normal;
+}
